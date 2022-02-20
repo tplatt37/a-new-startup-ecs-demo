@@ -1,0 +1,413 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: A-New-Startup - ECS - Sets up the CodeBuild project and related resources for creating the a-new-startup container image
+
+Resources:
+  
+#
+#  ____  ____ 
+# / ___)( __ \
+# \___ \ (__ (
+# (____/(____/
+#
+
+  # CodePipeline will use this for Artifacts
+  ArtifactStoreBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+
+#
+#  ___  __  ____  ____  ____  _  _  __  __    ____ 
+# / __)/  \(    \(  __)(  _ \/ )( \(  )(  )  (    \
+#( (__(  O )) D ( ) _)  ) _ () \/ ( )( / (_/\ ) D (
+# \___)\__/(____/(____)(____/\____/(__)\____/(____/
+#
+
+  # This project is used to build a Container Image of the a-new-startup app
+  BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+        Name: a-new-startup-container-image-build
+        Artifacts:
+            Type: CODEPIPELINE
+        Cache:
+              Type: LOCAL
+              Modes:
+                - LOCAL_DOCKER_LAYER_CACHE
+        Environment:
+            ComputeType: BUILD_GENERAL1_SMALL
+            # NOTE: Using Ubuntu/4.0 image - Docker already installed
+            Image: aws/codebuild/standard:4.0
+            # Must be on for a container image build
+            PrivilegedMode: true
+            Type: LINUX_CONTAINER
+            EnvironmentVariables:
+            - Name: ACCOUNTID
+              Type: PLAINTEXT
+              Value:
+                Ref:
+                  AWS::AccountId
+            - Name: AWS_DEFAULT_REGION
+              Type: PLAINTEXT
+              Value:
+                Ref:
+                  AWS::Region
+        ServiceRole:
+            Fn::GetAtt:
+            - BuildRole
+            - Arn
+        Source:
+            BuildSpec: buildspec-container.yml
+            Type: CODEPIPELINE
+
+
+#  ___  __     __   _  _  ____  _  _   __  ____  ___  _  _ 
+# / __)(  )   /  \ / )( \(    \/ )( \ / _\(_  _)/ __)/ )( \
+#( (__ / (_/\(  O )) \/ ( ) D (\ /\ //    \ )( ( (__ ) __ (
+# \___)\____/ \__/ \____/(____/(_/\_)\_/\_/(__) \___)\_)(_/
+# 
+
+  AmazonCloudWatchEventRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      EventPattern:
+        source:
+          - aws.codecommit
+        detail-type:
+          - CodeCommit Repository State Change
+        resources:
+          - !Join 
+            - ''
+            - - 'arn:aws:codecommit:'
+              - !Ref 'AWS::Region'
+              - ':'
+              - !Ref 'AWS::AccountId'
+              - ':'
+              - 'a-new-startup'
+        detail:
+          event:
+            - referenceCreated
+            - referenceUpdated
+          referenceType:
+            - branch
+          referenceName:
+            - main
+      Targets:
+        - Arn: !Join 
+            - ''
+            - - 'arn:aws:codepipeline:'
+              - !Ref 'AWS::Region'
+              - ':'
+              - !Ref 'AWS::AccountId'
+              - ':'
+              - 'a-new-startup-containerized'
+          RoleArn: !GetAtt 
+            - AmazonCloudWatchEventRole
+            - Arn
+          Id: codepipeline-AppPipeline
+
+            
+#  __   __   _  _ 
+# (  ) / _\ ( \/ )
+#  )( /    \/ \/ \
+# (__)\_/\_/\_)(_/
+#
+  AmazonCloudWatchEventRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - events.amazonaws.com
+              Action: 'sts:AssumeRole'
+        Path: /
+        Policies:
+          - PolicyName: cwe-pipeline-execution-containerized
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action: 'codepipeline:StartPipelineExecution'
+                  Resource: !Join 
+                    - ''
+                    - - 'arn:aws:codepipeline:'
+                      - !Ref 'AWS::Region'
+                      - ':'
+                      - !Ref 'AWS::AccountId'
+                      - ':'
+                      - 'a-new-startup-containerized'
+
+  CodePipelineArtifactStoreBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref ArtifactStoreBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: DenyInsecureConnections
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: !Join 
+              - ''
+              - - !GetAtt 
+                  - ArtifactStoreBucket
+                  - Arn
+                - /*
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+                    
+  CodePipelineServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
+      Policies:
+        - PolicyName: AWS-CodePipeline-Service-a-new-startup-containerized
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'codecommit:CancelUploadArchive'
+                  - 'codecommit:GetBranch'
+                  - 'codecommit:GetCommit'
+                  - 'codecommit:GetUploadArchiveStatus'
+                  - 'codecommit:UploadArchive'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'codedeploy:CreateDeployment'
+                  - 'codedeploy:GetApplicationRevision'
+                  - 'codedeploy:GetDeployment'
+                  - 'codedeploy:GetDeploymentConfig'
+                  - 'codedeploy:RegisterApplicationRevision'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'codebuild:BatchGetBuilds'
+                  - 'codebuild:StartBuild'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'devicefarm:ListProjects'
+                  - 'devicefarm:ListDevicePools'
+                  - 'devicefarm:GetRun'
+                  - 'devicefarm:GetUpload'
+                  - 'devicefarm:CreateUpload'
+                  - 'devicefarm:ScheduleRun'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                  - 'lambda:ListFunctions'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'iam:PassRole'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'elasticbeanstalk:*'
+                  - 'ec2:*'
+                  - 'elasticloadbalancing:*'
+                  - 'autoscaling:*'
+                  - 'cloudwatch:*'
+                  - 's3:*'
+                  - 'sns:*'
+                  - 'cloudformation:*'
+                  - 'rds:*'
+                  - 'sqs:*'
+                  - 'ecs:*'
+                Resource: '*'
+
+
+  BuildRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: CodeBuild-Role-a-new-startup-containerized
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'codebuild:*'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                  - 'lambda:ListFunctions'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'iam:PassRole'
+                Resource: '*'
+                # ECR perms needed to build and push the testing container image
+              - Effect: Allow
+                Action:
+                  - 'ecr:BatchGetImage'
+                  - 'ecr:BatchCheckLayerAvailability'
+                  - 'ecr:CompleteLayerUpload'
+                  - 'ecr:GetDownloadUrlForLayer'
+                  - 'ecr:InitiateLayerUpload'
+                  - 'ecr:PutImage'
+                  - 'ecr:UploadLayerPart'
+                  - 'ecr:GetAuthorizationToken'
+                Resource: '*'
+                # Need to be able to retrieve Outputs from stacks...
+              - Effect: Allow
+                Action:
+                  - 'cloudformation:DescribeStacks'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'cloudwatch:*'
+                  - 'logs:CreateLogStream'
+                  - 'logs:CreateLogGroup'
+                  - 'logs:PutLogEvents'
+                  - 's3:*'
+                Resource: '*'
+
+  CFNDeployRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - cloudformation.amazonaws.com
+              Action: 'sts:AssumeRole'
+        Path: /
+        Policies:
+          - PolicyName: cfnrole-role-a-new-startup-ecs
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - 'iam:PassRole'
+                    - 'iam:CreateRole'
+                    - 'iam:DeleteRole'
+                    - 'iam:AttachRolePolicy'
+                    - 'iam:DeleteRolePolicy'
+                    - 'iam:DetachRolePolicy'
+                    - 'iam:PutRolePolicy'
+                    - 'iam:GetRole'
+                  Resource: !Join 
+                    - ''
+                    - - '*'
+                - Effect: Allow
+                  Action:
+                    - 'cloudformation:CreateChangeSet'
+                    - 'cloudformation:ExecuteChangeSet'
+                    - 'cloudformation:DescribeStacks'
+                    - 'cloudwatch:*'
+                    - 'ecs:*'
+                    - 'ec2:CreateSecurityGroup'
+                    - 'ec2:DescribeSecurityGroups'
+                    - 'ec2:DeleteSecurityGroup'
+                    - 'elasticloadbalancing:CreateTargetGroup'
+                    - 'elasticloadbalancing:DeleteTargetGroup'
+                    - 'elasticloadbalancing:DescribeTargetGroups'
+                    - 'elasticloadbalancing:ModifyTargetGroupAttributes'
+                    - 'elasticloadbalancing:DescribeListeners'
+                    - 'elasticloadbalancing:CreateListener'
+                    - 'elasticloadbalancing:DeleteListener'
+                    - 'logs:CreateLogGroup'
+                    - 'logs:DeleteLogGroup'
+                    - 'logs:Describe*'
+                    - 'logs:CreateLogStream'
+                    - 'logs:PutLogEvents'
+                    - 'ec2:AuthorizeSecurityGroupIngress'
+                  Resource: '*'
+
+  CodeDeployRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - codedeploy.amazonaws.com
+                # MUST explicitly allow our CodePipeline role to assume this role.
+                AWS:
+                - !GetAtt CodePipelineServiceRole.Arn
+              Action: 'sts:AssumeRole'
+        Path: /
+        Policies:
+          - PolicyName: codedeploy-role-a-new-startup-ecs
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - 'iam:PassRole'
+                  Resource: "*"
+                - Effect: Allow
+                  Action: 'ecs:*'
+                  Resource: !Join 
+                    - ''
+                    - - '*'
+                - Effect: Allow
+                  Action: 'elbv2:*'
+                  Resource: !Join 
+                    - ''
+                    - - '*'
+                  
+Outputs:
+  
+  ArtifactStoreBucket:
+    Description: Where the build artifacts go.
+    Value: !Ref ArtifactStoreBucket
+    Export:
+      Name: a-new-startup-ecs-ArtifactStoreBucket
+  
+  BuildProject:
+    Value: !Ref BuildProject
+    Export:
+      Name: a-new-startup-ecs-BuildProject
+      
+  CodePipelineServiceRole:
+    Value: !GetAtt CodePipelineServiceRole.Arn
+    Export:
+      Name: a-new-startup-ecs-CodePipelineServiceRole
+      
+  CFNDeployRole:
+    Value: !GetAtt CFNDeployRole.Arn
+    Export:
+      Name: a-new-startup-ecs-CFNDeployRole
+
+  CodeDeployRole:
+    Value: !GetAtt CodeDeployRole.Arn
+    Export:
+      Name: a-new-startup-ecs-CodeDeployRole

@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: A-New-Startup - ECS - Creates an ECS Cluster with an ALB , ready for Service(s) to be added.
+
+Parameters:
+
+  ClusterName:
+    Type: String
+    Default: "ecs-demo"
+  
+  VpcId:
+    Description: Need a VPC where the ALB will reside.
+    Type: AWS::EC2::VPC::Id
+    
+  PublicSubnets:
+    Description: Comma delimited list of PUBLIC Subnets for the ALB
+    Type: String
+
+  PrivateSubnets:
+    Description: Comma delimited list of PRIVATE Subnets for Fargate - which will happen in another stack later.
+    Type: String
+    
+  LoadBalancerPort:
+    Type: Number
+    Default: 80
+ 
+Resources:
+
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref ClusterName
+
+  # A role needed by ECS
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ['-', [!Ref ClusterName, ExecutionRole]]
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+  
+  # A role for the containers
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ['-', [!Ref ClusterName, TaskRole]]
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":iam"
+              - ":"
+              - ":"
+              - Ref: AWS::AccountId
+              - ":policy/a-new-startup"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+  
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Join ['-', [!Ref ClusterName, LoadBalancerSecurityGroup]]
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref LoadBalancerPort
+          ToPort: !Ref LoadBalancerPort
+          CidrIp: 0.0.0.0/0
+  
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes:
+        # this is the default, but is specified here in case it needs to be changed
+        - Key: idle_timeout.timeout_seconds
+          Value: 60
+      Name: !Join ['-', [!Ref ClusterName, LoadBalancer]]
+      # "internal" is also an option
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref LoadBalancerSecurityGroup
+      Subnets: !Split [',', !Ref PublicSubnets]
+ 
+  AppImageRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: "a-new-startup"
+  
+Outputs:
+
+  VpcId:
+    Value: !Ref VpcId
+    Export:
+      Name: "ecs-demo-VpcId"
+  
+  PublicSubnets :
+    Value: !Ref PublicSubnets
+    Export:
+      Name: "ecs-demo-PublicSubnets"
+
+  PrivateSubnets :
+    Value: !Ref PrivateSubnets
+    Export:
+      Name: "ecs-demo-PrivateSubnets"
+  
+  Cluster:
+    Value: !Ref Cluster
+    Export:
+      Name: "ecs-demo-Cluster"
+  
+  ExecutionRole:
+    Value: !Ref ExecutionRole
+    Export:
+      Name: "ecs-demo-ExecutionRole"
+  
+  ExecutionRoleArn:
+    Value: !GetAtt ExecutionRole.Arn
+    Export:
+      Name: "ecs-demo-ExecutionRoleArn"
+      
+  TaskRole:
+    Value: !Ref TaskRole
+    Export:
+      Name: "ecs-demo-TaskRole"
+
+  TaskRoleArn:
+    Value: !GetAtt TaskRole.Arn
+    Export:
+      Name: "ecs-demo-TaskRoleArn"
+      
+  LoadBalancerSecurityGroup:
+    Value: !Ref LoadBalancerSecurityGroup
+    Export:
+      Name: "ecs-demo-LoadBalancerSecurityGroup"
+      
+  LoadBalancerPort:
+    Value: !Ref LoadBalancerPort
+    Export:
+      Name: "ecs-demo-LoadBalancerPort"
+      
+  LoadBalancer:
+    Value: !Ref LoadBalancer
+    Export:
+      Name: "ecs-demo-LoadBalancer"
+
+  LoadBalancerDNSName:
+    Value: !GetAtt LoadBalancer.DNSName
+    Export:
+      Name: "ecs-demo-LoadBalancerDNSName"
+    

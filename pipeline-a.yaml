@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: A-New-Startup - ECS - Sets up the CI/CD Pipeline for deploying to ECS via CloudFormation
+
+Resources:
+  
+#  ___  __  ____  ____  ____  __  ____  ____  __    __  __ _  ____ 
+# / __)/  \(    \(  __)(  _ \(  )(  _ \(  __)(  )  (  )(  ( \(  __)
+#( (__(  O )) D ( ) _)  ) __/ )(  ) __/ ) _) / (_/\ )( /    / ) _) 
+# \___)\__/(____/(____)(__)  (__)(__)  (____)\____/(__)\_)__)(____) 
+# 
+#
+
+  # This simple pipeline uses CloudFormation to deploy to ECS.
+  AppPipeline:
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+      Name: a-new-startup-containerized
+      ArtifactStore:
+        Type: S3
+        Location: !ImportValue a-new-startup-ecs-ArtifactStoreBucket
+      RoleArn: !ImportValue a-new-startup-ecs-CodePipelineServiceRole
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Application-Code
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeCommit
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                BranchName: "main"
+                RepositoryName: "a-new-startup"
+                PollForSourceChanges: false
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build-App-Container-Image
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                # Need to include the .json files we create as part of the build process
+                - Name: BuildArtifact
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !ImportValue a-new-startup-ecs-BuildProject
+              RunOrder: 1
+        - Name: Deploy
+          Actions:
+            - Name: Deploy-To-ECS
+              InputArtifacts:
+                - Name: BuildArtifact
+                # need to pass service-a.yaml through from the source to the deploy stage.
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND
+                RoleArn: !ImportValue a-new-startup-ecs-CFNDeployRole
+                # We're updating an existing stack.
+                StackName: "a-new-startup-ecs-service-a"
+                TemplatePath: "SourceOutput::service-a.yaml"
+                TemplateConfiguration: "BuildArtifact::stackparams.json"
+
