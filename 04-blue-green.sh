@@ -21,6 +21,14 @@ echo "IMAGEURI=$IMAGEURI."
 echo "Creating Blue/Green deployment ..."
 aws cloudformation deploy \
     --template-file blue-green.yaml \
-    --stack-name a-new-startup-ecs-green-blue4 \
+    --stack-name a-new-startup-ecs-green-blue \
     --capabilities CAPABILITY_IAM \
-    --parameter-overrides Cluster=ecs-demo Vpc=$VPCID PublicSubnets=$PUBLICSUBNETS PrivateSubnets=$PRIVATESUBNETS ImageUri=$IMAGEURI Subnet1=subnet-03e7d5fef169bc0fc Subnet2=subnet-07cbb5aef6aac40cd 
+    --parameter-overrides \
+    Cluster=ecs-demo \
+    PublicSubnets=$PUBLICSUBNETS \
+    PrivateSubnets=$PRIVATESUBNETS \
+    ImageUri=$IMAGEURI \
+    VpcId=$VPCID \
+    Vpc=$VPCID \
+    Subnet1=subnet-03e7d5fef169bc0fc \
+    Subnet2=subnet-07cbb5aef6aac40cd 

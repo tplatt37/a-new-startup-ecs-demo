@@ -1,14 +1,10 @@
 Parameters:
-  Cluster:
-    Type: String
   Vpc:
     Type: 'AWS::EC2::VPC::Id'
   Subnet1:
     Type: 'AWS::EC2::Subnet::Id'
   Subnet2:
     Type: 'AWS::EC2::Subnet::Id'
-  ImageUri:
-    Type: String
 Transform:
   - 'AWS::CodeDeployBlueGreen'
 Hooks:
@@ -50,10 +46,6 @@ Resources:
           ToPort: 80
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-          FromPort: 3000
-          ToPort: 8080
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
           CidrIp: 0.0.0.0/0
@@ -66,13 +58,13 @@ Resources:
     Properties:
       HealthCheckIntervalSeconds: 5
       HealthCheckPath: /
-      HealthCheckPort: '3000'
+      HealthCheckPort: '80'
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 2
       HealthyThresholdCount: 2
       Matcher:
         HttpCode: '200'
-      Port: 3000
+      Port: 80
       Protocol: HTTP
       Tags:
         - Key: Group
@@ -85,13 +77,13 @@ Resources:
     Properties:
       HealthCheckIntervalSeconds: 5
       HealthCheckPath: /
-      HealthCheckPort: '3000'
+      HealthCheckPort: '80'
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 2
       HealthyThresholdCount: 2
       Matcher:
         HttpCode: '200'
-      Port: 3000
+      Port: 80
       Protocol: HTTP
       Tags:
         - Key: Group
@@ -163,29 +155,32 @@ Resources:
         - Arn
       ContainerDefinitions:
         - Name: DemoApp
-          Image: !Ref ImageUri
+          Image: 'nginxdemos/hello:latest'
           Essential: true
           PortMappings:
-            - HostPort: 3000
+            - HostPort: 80
               Protocol: tcp
-              ContainerPort: 3000
+              ContainerPort: 80
       RequiresCompatibilities:
         - FARGATE
       NetworkMode: awsvpc
       Cpu: '256'
       Memory: '512'
       Family: ecs-demo
+  ECSDemoCluster:
+    Type: 'AWS::ECS::Cluster'
+    Properties: {}
   ECSDemoService:
     Type: 'AWS::ECS::Service'
     Properties:
-      Cluster: !Ref Cluster
+      Cluster: !Ref ECSDemoCluster
       DesiredCount: 1
       DeploymentController:
         Type: EXTERNAL
   BlueTaskSet:
     Type: 'AWS::ECS::TaskSet'
     Properties:
-      Cluster: !Ref Cluster
+      Cluster: !Ref ECSDemoCluster
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsVpcConfiguration:
@@ -203,12 +198,12 @@ Resources:
       TaskDefinition: !Ref BlueTaskDefinition
       LoadBalancers:
         - ContainerName: DemoApp
-          ContainerPort: 3000
+          ContainerPort: 80
           TargetGroupArn: !Ref ALBTargetGroupBlue
   PrimaryTaskSet:
     Type: 'AWS::ECS::PrimaryTaskSet'
     Properties:
-      Cluster: !Ref Cluster
+      Cluster: !Ref ECSDemoCluster
       Service: !Ref ECSDemoService
       TaskSetId: !GetAtt 
         - BlueTaskSet
