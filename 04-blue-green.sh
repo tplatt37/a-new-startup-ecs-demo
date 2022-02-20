@@ -17,8 +17,10 @@ TAG=$(aws ecr describe-images --repository-name "a-new-startup" --image-ids imag
 # Get the leftmost 6 chars only
 TAGPARSED=${TAG:0:6}
 
+# Need to get the URI separately
 URI=$(aws ecr describe-repositories --repository-names=a-new-startup --query "repositories[0].repositoryUri" --output text)
-IMAGEURI=$URI:$TAG
+IMAGEURI=$URI:$TAGPARSED
+
 echo "IMAGEURI=$IMAGEURI."
 
 echo "Creating Blue/Green deployment ..."

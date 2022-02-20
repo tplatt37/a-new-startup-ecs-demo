@@ -5,20 +5,26 @@ Parameters:
     Type: 'AWS::EC2::Subnet::Id'
   Subnet2:
     Type: 'AWS::EC2::Subnet::Id'
+  VpcId:
+    Type: String
+  PublicSubnets:
+    Type: String
   Cluster:
     Type: String
   ImageUri:
     Type: String
+    
 Transform:
   - 'AWS::CodeDeployBlueGreen'
+
 Hooks:
   CodeDeployBlueGreenHook:
     Properties:
       TrafficRoutingConfig:
         Type: TimeBasedCanary
         TimeBasedCanary:
-          StepPercentage: 15
-          BakeTimeMins: 5
+          StepPercentage: 25
+          BakeTimeMins: 1
       Applications:
         - Target:
             Type: 'AWS::ECS::Service'
@@ -38,12 +44,14 @@ Hooks:
                 - ALBTargetGroupBlue
                 - ALBTargetGroupGreen
     Type: 'AWS::CodeDeploy::BlueGreen'
+
 Resources:
+
   ExampleSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Security group for ec2 access
-      VpcId: !Ref Vpc
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -61,6 +69,7 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+          
   ALBTargetGroupBlue:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
@@ -79,7 +88,8 @@ Resources:
           Value: Example
       TargetType: ip
       UnhealthyThresholdCount: 4
-      VpcId: !Ref Vpc
+      VpcId: !Ref VpcId
+      
   ALBTargetGroupGreen:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
@@ -98,7 +108,8 @@ Resources:
           Value: Example
       TargetType: ip
       UnhealthyThresholdCount: 4
-      VpcId: !Ref Vpc
+      VpcId: !Ref VpcId
+      
   ExampleALB:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
@@ -113,6 +124,7 @@ Resources:
           Value: Example
       Type: application
       IpAddressType: ipv4
+      
   ALBListenerProdTraffic:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
     Properties:
@@ -125,6 +137,7 @@ Resources:
       LoadBalancerArn: !Ref ExampleALB
       Port: 80
       Protocol: HTTP
+      
   ALBListenerProdRule:
     Type: 'AWS::ElasticLoadBalancingV2::ListenerRule'
     Properties:
@@ -142,6 +155,7 @@ Resources:
               - Mozilla
       ListenerArn: !Ref ALBListenerProdTraffic
       Priority: 1
+      
   ECSTaskExecutionRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -155,6 +169,7 @@ Resources:
             Action: 'sts:AssumeRole'
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+        
   BlueTaskDefinition:
     Type: 'AWS::ECS::TaskDefinition'
     Properties:
@@ -162,7 +177,7 @@ Resources:
         - ECSTaskExecutionRole
         - Arn
       ContainerDefinitions:
-        - Name: DemoApp
+        - Name: a-new-startup
           Image: !Ref ImageUri
           Essential: true
           PortMappings:
@@ -174,6 +189,7 @@ Resources:
       Cpu: '256'
       Memory: '512'
       Family: ecs-demo
+      
   ECSDemoService:
     Type: 'AWS::ECS::Service'
     Properties:
@@ -181,6 +197,7 @@ Resources:
       DesiredCount: 1
       DeploymentController:
         Type: EXTERNAL
+        
   BlueTaskSet:
     Type: 'AWS::ECS::TaskSet'
     Properties:
@@ -201,9 +218,10 @@ Resources:
       Service: !Ref ECSDemoService
       TaskDefinition: !Ref BlueTaskDefinition
       LoadBalancers:
-        - ContainerName: DemoApp
+        - ContainerName: a-new-startup
           ContainerPort: 3000
           TargetGroupArn: !Ref ALBTargetGroupBlue
+          
   PrimaryTaskSet:
     Type: 'AWS::ECS::PrimaryTaskSet'
     Properties:
