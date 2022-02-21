@@ -14,12 +14,7 @@ if [ -z $1 ]; then
         exit 0
 fi
 
-if [ -z $2 ]; then
-        echo "Need a comma delimited list of two PRIVATE subnet Ids (for Fargate). Exiting..."
-        exit 0
-fi
-
-source 01-cluster.sh $1 $2
+source 01-cluster.sh $1
 aws cloudformation wait stack-create-complete --stack-name "a-new-startup-ecs-cluster"
 
 echo "Creating Build Projects..."
@@ -38,3 +33,5 @@ echo "Open this URL in your browser to see the app. NOTE: It won't work until th
 echo " "
 echo "http://$DNSNAME"
 echo " "
+
+echo "NOTE: If you want to use the Blue-Green demo, please wait a few minutes before running the 04-blue-green.sh script. The Container Image is probably still be built..."

@@ -103,8 +103,8 @@ Resources:
       NetworkConfiguration: 
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
-          # These must be PRIVATE - Fargate doesn't support Public subnets
-          Subnets: !Split [',', !ImportValue ecs-demo-PrivateSubnets]
+          # Running Fargate in PUBLIC subnets.  (OK on ECS, Not OK on EKS)
+          Subnets: !Split [',', !ImportValue ecs-demo-PublicSubnets]
           SecurityGroups:
             - !Ref ContainerSecurityGroup
       LoadBalancers:

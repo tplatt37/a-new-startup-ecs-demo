@@ -15,10 +15,6 @@ Parameters:
     Description: Comma delimited list of PUBLIC Subnets for the ALB
     Type: String
 
-  PrivateSubnets:
-    Description: Comma delimited list of PRIVATE Subnets for Fargate - which will happen in another stack later.
-    Type: String
-    
   LoadBalancerPort:
     Type: Number
     Default: 80
@@ -108,11 +104,6 @@ Outputs:
     Export:
       Name: "ecs-demo-PublicSubnets"
 
-  PrivateSubnets :
-    Value: !Ref PrivateSubnets
-    Export:
-      Name: "ecs-demo-PrivateSubnets"
-  
   Cluster:
     Value: !Ref Cluster
     Export:

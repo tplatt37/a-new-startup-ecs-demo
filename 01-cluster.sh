@@ -5,12 +5,6 @@ if [ -z $1 ]; then
         exit 0
 fi
 
-if [ -z $2 ]; then
-        echo "Need a comma delimited list of two PRIVATE subnet Ids. Exiting..."
-        exit 0
-fi
-
-
 # Sometimes we need a comma delimited list of subnets, other times, space delimited. 
 # use $1 for the comma delimited, and SUBNETS for the space delimited.
 # Subnets are needed for the ALB.
@@ -22,4 +16,4 @@ VPC_ID=$(aws ec2 describe-subnets --subnet-ids $SUBNETS --query 'Subnets[0].VpcI
 echo "VpcId=$VPC_ID"
 
 
-aws cloudformation deploy --template-file cluster.yaml --stack-name "a-new-startup-ecs-cluster" --parameter-overrides VpcId=$VPC_ID PublicSubnets=$1 PrivateSubnets=$2 --capabilities CAPABILITY_NAMED_IAM
+aws cloudformation deploy --template-file cluster.yaml --stack-name "a-new-startup-ecs-cluster" --parameter-overrides VpcId=$VPC_ID PublicSubnets=$1 --capabilities CAPABILITY_NAMED_IAM

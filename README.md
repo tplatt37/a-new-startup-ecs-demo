@@ -15,7 +15,7 @@ NOTE 2: This set of templates will create resources that cost money - including 
 
 # Requirements
 
-You need to supply a VPC with 2 Public Subnets (for ALB), and 2 Private Subnets (for Fargate)
+You need to supply a VPC with 2 Public Subnets (for ALB)
 
 This set of templates uses many static/fixed resource names (stack names, repo name, iam stuff, and much more) for simplicity's sake. 
 This means you can only install it ONCE per account (stack will fail with naming conflicts otherwiwse).
@@ -33,9 +33,9 @@ I recommend setting your AWS_DEFAULT_REGION first:
 
 export AWS_DEFAULT_REGION=us-east-1
 
-Run the following command, and pass a comma delimited list of the 2 PUBLIC subnets and then 2 PRIVATE subnets:
+Run the following command, and pass a comma delimited list of the 2 PUBLIC subnets.
 
-./00-install.sh "subnet-1234568999,subnet-8298392925" "subnet-383838299,subnet-292893993"
+./00-install.sh "subnet-1234568999,subnet-8298392925" 
 
 Alternatively, you can run the individual files (This is helpful after the initial install if you are making updates and only want one stack to be updated.)
 
@@ -73,8 +73,11 @@ The pipeline should then kick off with the latest commit.
 
 # Then what? 
 
-That's it for now.
+Using the 04-blue-green.sh script you can demonstrate a Blue/Green deployment orchestrated by CodeDeploy.
 
+(This demo is a bit more manual.)
+
+See the notes within 04-blue-green.sh
 
 # Uninstall
 
