@@ -14,6 +14,10 @@ if [ -z $1 ]; then
         exit 0
 fi
 
+REGION=${AWS_DEFAULT_REGION:-$(aws configure get default.region)}
+
+echo "Creating in $REGION..."
+
 source 01-cluster.sh $1
 aws cloudformation wait stack-create-complete --stack-name "a-new-startup-ecs-cluster"
 

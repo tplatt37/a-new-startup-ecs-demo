@@ -5,7 +5,9 @@
 # No snapshots, nothing is retained.
 #
 
-read -p "This will delete all the a-new-startup-ecs-* stacks. Are you sure? (Yy) " -n 1 -r
+REGION=${AWS_DEFAULT_REGION:-$(aws configure get default.region)}
+
+read -p "This will delete all the a-new-startup-ecs-* stacks in $REGION. Are you sure? (Yy) " -n 1 -r
 echo    # (optional) move to a new line
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
