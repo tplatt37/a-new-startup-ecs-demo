@@ -27,7 +27,7 @@ This repo is meant for demos to students - so we keep it as simple (as possible)
 
 After running the installation script, the architecture will be:
 
-[!Diagram - ECS cluster for a-new-startup](/diagrams/aws-a-new-startup-ecs-demo-cluster.png)
+![Diagram - ECS cluster for a-new-startup](/diagrams/aws-a-new-startup-ecs-demo-cluster.png)
 
 Please note that the DynamoDB table, SNS Topic, and SQS queue are created by the a-new-startup-pipeline-demo project, which MUST BE INSTALLED FIRST.
 
