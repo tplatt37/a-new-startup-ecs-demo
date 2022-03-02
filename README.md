@@ -35,10 +35,11 @@ The CI/CD Pipeline will be implemented as shown:
 
 ![Diagram - ECS a-new-startup pipeline](/diagrams/aws-a-new-startup-ecs-demo-pipeline.png)
 
+Please note that the CodeCommit repo (a-new-startup) was previously created.
 
 # Installation
 
-NOTE: Your must have already installed: https://github.com/tplatt37/a-new-startup-pipeline-demo
+NOTE: You must have already installed: https://github.com/tplatt37/a-new-startup-pipeline-demo
 
 That's where the source code for the app comes from.
 
