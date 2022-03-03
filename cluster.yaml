@@ -46,15 +46,7 @@ Resources:
     Properties:
       RoleName: !Join ['-', [!Ref ClusterName, TaskRole]]
       ManagedPolicyArns:
-        - Fn::Join:
-            - ""
-            - - "arn:"
-              - Ref: AWS::Partition
-              - ":iam"
-              - ":"
-              - ":"
-              - Ref: AWS::AccountId
-              - ":policy/a-new-startup"
+        - !ImportValue 'a-new-startup-pipeline-AppManagedPolicy'
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
