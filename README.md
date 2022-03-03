@@ -44,13 +44,13 @@ NOTE: You must have already installed: https://github.com/tplatt37/a-new-startup
 That's where the source code for the app comes from.
 
 I recommend setting your AWS_DEFAULT_REGION first:
-
+```
 export AWS_DEFAULT_REGION=us-east-1
-
+```
 Run the following command, and pass a comma delimited list of the 2 PUBLIC subnets.
-
+```
 ./00-install.sh "subnet-1234568999,subnet-8298392925" 
-
+```
 Alternatively, you can run the individual files (This is helpful after the initial install if you are making updates and only want one stack to be updated.)
 
 01-cluster.sh, 02-build-projects.sh, etc.
@@ -64,24 +64,25 @@ After it is deployed, pull up the ALB DNSName in your browser to see the app. (T
 To run it again, you have the option of using "Release Change" in CodePipeline, or cloning the application source, and making changes.
 
 Find the Clone URL using:
+```
 aws codecommit get-repository --repository-name "a-new-startup"
-
+```
 or
-
+```
 aws codecommit get-repository --repository-name "a-new-startup" --query "repositoryMetadata.cloneUrlSsh"
-
+```
 Then run a git clone:
+```
 git clone ssh://git-codecommit.us-east-1.amazonaws.com/v1/repos/a-new-startup
-
+```
 or use command substitution to do all that in one command (NOTE: Using ssh here.  Change to http if desired)
-
+```
 git clone $(aws codecommit get-repository --repository-name "a-new-startup" --query "repositoryMetadata.cloneUrlSsh" --output text)         
-
+```
 Modify some of the visible text in src/views/index.ejs (for an easy and visible change)
-
-git commit -a -m "updated version number"
-
-git push
+```
+git commit -a -m "updated version number" && git push
+```
 
 The pipeline should then kick off with the latest commit.
 
@@ -89,16 +90,20 @@ The pipeline should then kick off with the latest commit.
 
 Using the 04-blue-green.sh script you can demonstrate a Blue/Green deployment orchestrated by CodeDeploy.
 
-(This demo is a bit more manual.)
+```
+./04-blue-green.sh
+```
+
+(This demo is a bit more manual, but basically run it once to create the service, push some changes to a-new-startup, then run this script again.  The 2nd deploy will be a Blue/Green deployment.)
 
 See the notes within 04-blue-green.sh
 
 # Uninstall
 
 To uninstall (WARNING - This deletes EVERYTHING created above - no snapshots, no retain)
-
+```
 ./98-uninstall.sh 
-
+```
 Investigate that file to find out what it does. 
 
 # A Warning
