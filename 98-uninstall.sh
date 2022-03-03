@@ -34,6 +34,11 @@ aws s3 rm s3://$ARTIFACT_BUCKET_STORE --recursive
 aws ecr delete-repository --repository-name "a-new-startup" --force
 
 # Delete the services first, otherwise you may find a role missing...
+STACK_NAME=a-new-startup-ecs-bluegreen
+echo "Deleting ($STACK_NAME) ..."
+aws cloudformation delete-stack --stack-name $STACK_NAME
+aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 
+
 STACK_NAME=a-new-startup-ecs-service-a
 echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
