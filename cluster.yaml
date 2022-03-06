@@ -1,11 +1,17 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: A-New-Startup - ECS - Creates an ECS Cluster with an ALB , ready for Service(s) to be added.
+Description: A-New-Startup - ECS - Creates an ECS Cluster with an ALB, ready for Service(s) to be added.
 
 Parameters:
+
+  Prefix:
+    Type: String
+    Default: a-new-startup-ecs
+    Description: "A Prefix to use on the resource names."
 
   ClusterName:
     Type: String
     Default: "ecs-demo"
+    Description: "A name for the ECS cluster that will be created."
   
   VpcId:
     Description: Need a VPC where the ALB will reside.
@@ -26,33 +32,7 @@ Resources:
     Properties:
       ClusterName: !Ref ClusterName
 
-  # A role needed by ECS
-  ExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      # No RoleName, we want dynamic, unique names.
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ecs-tasks.amazonaws.com
-            Action: 'sts:AssumeRole'
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
-  
-  # A role for the containers
-  TaskRole:
-    Type: AWS::IAM::Role
-    Properties:
-      # No RoleName, we want dynamic/unique role names
-      ManagedPolicyArns:
-        - !ImportValue 'a-new-startup-pipeline-AppManagedPolicy'
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ecs-tasks.amazonaws.com
-            Action: 'sts:AssumeRole'
+
   
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -79,65 +59,40 @@ Resources:
         - !Ref LoadBalancerSecurityGroup
       Subnets: !Split [',', !Ref PublicSubnets]
  
-  AppImageRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: "a-new-startup-ecs"
-  
 Outputs:
 
   VpcId:
     Value: !Ref VpcId
     Export:
-      Name: "ecs-demo-VpcId"
+      Name: !Join ['-', [!Ref Prefix, 'VpcId']]
   
   PublicSubnets :
     Value: !Ref PublicSubnets
     Export:
-      Name: "ecs-demo-PublicSubnets"
+      Name: !Join ['-', [!Ref Prefix, 'PublicSubnets']]
 
   Cluster:
     Value: !Ref Cluster
     Export:
-      Name: "ecs-demo-Cluster"
+      Name: !Join ['-', [!Ref Prefix, 'Cluster']]
   
-  ExecutionRole:
-    Value: !Ref ExecutionRole
-    Export:
-      Name: "ecs-demo-ExecutionRole"
-  
-  ExecutionRoleArn:
-    Value: !GetAtt ExecutionRole.Arn
-    Export:
-      Name: "ecs-demo-ExecutionRoleArn"
-      
-  TaskRole:
-    Value: !Ref TaskRole
-    Export:
-      Name: "ecs-demo-TaskRole"
-
-  TaskRoleArn:
-    Value: !GetAtt TaskRole.Arn
-    Export:
-      Name: "ecs-demo-TaskRoleArn"
-      
   LoadBalancerSecurityGroup:
     Value: !Ref LoadBalancerSecurityGroup
     Export:
-      Name: "ecs-demo-LoadBalancerSecurityGroup"
+      Name: !Join ['-', [!Ref Prefix, 'LoadBalancerSecurityGroup']]
       
   LoadBalancerPort:
     Value: !Ref LoadBalancerPort
     Export:
-      Name: "ecs-demo-LoadBalancerPort"
+      Name: !Join ['-', [!Ref Prefix, 'LoadBalancerPort']]
       
   LoadBalancer:
     Value: !Ref LoadBalancer
     Export:
-      Name: "ecs-demo-LoadBalancer"
+      Name: !Join ['-', [!Ref Prefix, 'LoadBalancer']]
 
   LoadBalancerDNSName:
     Value: !GetAtt LoadBalancer.DNSName
     Export:
-      Name: "ecs-demo-LoadBalancerDNSName"
+      Name: !Join ['-', [!Ref Prefix, 'LoadBalancerDNSName']]
     

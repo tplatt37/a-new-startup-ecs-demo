@@ -1,6 +1,13 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: A-New-Startup - ECS - Sets up the CodeBuild project and related resources for creating the a-new-startup container image
 
+Parameters:
+
+  Prefix:
+    Type: String
+    Default: a-new-startup-ecs
+    Description: "A Prefix to use on the resource names."
+
 Resources:
   
 #
@@ -57,7 +64,9 @@ Resources:
                   AWS::Region
             - Name: OVERRIDE_REPO_NAME
               Type: PLAINTEXT
-              Value: "a-new-startup-ecs"
+              Value:
+                Fn::ImportValue:
+                  !Join ["-", [ !Ref Prefix, "AppImage"]]
         ServiceRole:
             Fn::GetAtt:
             - BuildRole
@@ -89,7 +98,9 @@ Resources:
               - ':'
               - !Ref 'AWS::AccountId'
               - ':'
-              - 'a-new-startup'
+              # Need to retrieve the CodeCommit Repo name from the first stack. It's an Export, so we use ImportValue here.
+              - !ImportValue
+                Fn::Join: ["-", [ !Ref Prefix, "AppRepo"]]
         detail:
           event:
             - referenceCreated
@@ -106,7 +117,8 @@ Resources:
               - ':'
               - !Ref 'AWS::AccountId'
               - ':'
-              - 'a-new-startup-containerized'
+              # This pipeline will be created in the next stack... 
+              - !Join ['-',[ !Ref Prefix, 'containerized']]
           RoleArn: !GetAtt 
             - AmazonCloudWatchEventRole
             - Arn
@@ -144,7 +156,8 @@ Resources:
                       - ':'
                       - !Ref 'AWS::AccountId'
                       - ':'
-                      - 'a-new-startup-containerized'
+                      # This pipeline will be created in the next stack... 
+                      - !Join ['-',[ !Ref Prefix, 'containerized']]
 
   CodePipelineArtifactStoreBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
@@ -182,7 +195,11 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
       Policies:
-        - PolicyName: AWS-CodePipeline-Service-a-new-startup-containerized
+        # Need a unique name
+        - PolicyName: !Join
+              - '-'
+              - - !Ref Prefix
+                - "codepipeline-containerized"
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -254,7 +271,10 @@ Resources:
             Action: 'sts:AssumeRole'
       Path: /
       Policies:
-        - PolicyName: CodeBuild-Role-a-new-startup-containerized
+        - PolicyName: !Join
+              - '-'
+              - - !Ref Prefix
+                - "codebuild-containerized"
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -310,7 +330,11 @@ Resources:
               Action: 'sts:AssumeRole'
         Path: /
         Policies:
-          - PolicyName: cfnrole-role-a-new-startup-ecs
+          - PolicyName: !Join
+              - '-'
+              - - !Ref Prefix
+                - "cfn-deploy-containerized"
+
             PolicyDocument:
               Version: 2012-10-17
               Statement:
@@ -324,6 +348,7 @@ Resources:
                     - 'iam:DetachRolePolicy'
                     - 'iam:PutRolePolicy'
                     - 'iam:GetRole'
+                    - 'iam:CreatePolicy'
                   Resource: !Join 
                     - ''
                     - - '*'
@@ -350,7 +375,18 @@ Resources:
                     - 'logs:CreateLogStream'
                     - 'logs:PutLogEvents'
                     - 'ec2:AuthorizeSecurityGroupIngress'
+                    # TODO: Make more precise
+                    - 'dynamodb:*'
+                    - 'sqs:*'
+                    - 'sns:*'
+                    - 'iam:GetPolicy'
+                    - 'iam:ListPolicyVersions'
+                    - 'iam:DeletePolicy'
+                    - 'ssm:PutParameter'
+                    - 'ssm:DeleteParameter'
+                    - 'ssm:AddTagsToResource'
                   Resource: '*'
+
 
   CodeDeployRole:
       Type: 'AWS::IAM::Role'
@@ -368,7 +404,10 @@ Resources:
               Action: 'sts:AssumeRole'
         Path: /
         Policies:
-          - PolicyName: codedeploy-role-a-new-startup-ecs
+          - PolicyName: !Join
+              - '-'
+              - - !Ref Prefix
+                - "codedeploy-containerized"
             PolicyDocument:
               Version: 2012-10-17
               Statement:
@@ -393,24 +432,24 @@ Outputs:
     Description: Where the build artifacts go.
     Value: !Ref ArtifactStoreBucket
     Export:
-      Name: a-new-startup-ecs-ArtifactStoreBucket
+      Name: !Join ['-', [!Ref Prefix, 'ArtifactStoreBucket']]
   
   BuildProject:
     Value: !Ref BuildProject
     Export:
-      Name: a-new-startup-ecs-BuildProject
+      Name: !Join ['-', [!Ref Prefix, 'BuildProject']]
       
   CodePipelineServiceRole:
     Value: !GetAtt CodePipelineServiceRole.Arn
     Export:
-      Name: a-new-startup-ecs-CodePipelineServiceRole
+      Name: !Join ['-', [!Ref Prefix, 'CodePipelineServiceRole']]
       
   CFNDeployRole:
     Value: !GetAtt CFNDeployRole.Arn
     Export:
-      Name: a-new-startup-ecs-CFNDeployRole
+      Name: !Join ['-', [!Ref Prefix, 'CFNDeployRole']]
 
   CodeDeployRole:
     Value: !GetAtt CodeDeployRole.Arn
     Export:
-      Name: a-new-startup-ecs-CodeDeployRole
+      Name: !Join ['-', [!Ref Prefix, 'CodeDeployRole']]

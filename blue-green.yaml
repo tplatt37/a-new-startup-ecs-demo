@@ -17,6 +17,10 @@ Parameters:
     Type: String
   TaskRoleArn:
     Type: String
+  TableName:
+    Type: String
+  TopicArn:
+    Type: String
     
 Transform:
   - 'AWS::CodeDeployBlueGreen'
@@ -180,18 +184,9 @@ Resources:
               ContainerPort: 3000
           Environment:
             - Name: APP_TABLE_NAME
-              Value: a-new-startup-dev
+              Value: !Ref TableName
             - Name: APP_TOPIC_ARN
-              Value: 
-                Fn::Join:
-                  - ""
-                  - - "arn:"
-                    - Ref: AWS::Partition
-                    - ":sns:"
-                    - Ref: AWS::Region
-                    - ":"
-                    - Ref: AWS::AccountId
-                    - ":a-new-startup-dev"
+              Value: !Ref TopicArn
 
       RequiresCompatibilities:
         - FARGATE

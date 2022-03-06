@@ -15,30 +15,42 @@
 # We have to retrieve all values here and pass them in via Parameters
 #
 
-VPCID=$(aws cloudformation list-exports --query "Exports[?Name=='ecs-demo-VpcId'].Value" --output text)
+PREFIX="a-new-startup-ecs"
+
+VPCID=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-VpcId'].Value" --output text)
 echo "VPCID=$VPCID."
 
-PUBLICSUBNETS=$(aws cloudformation list-exports --query "Exports[?Name=='ecs-demo-PublicSubnets'].Value" --output text)
+PUBLICSUBNETS=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-PublicSubnets'].Value" --output text)
 echo "PUBLICSUBNETS=$PUBLICSUBNETS."
 
-TASKROLEARN=$(aws cloudformation list-exports --query "Exports[?Name=='ecs-demo-TaskRole'].Value" --output text)
+TASKROLEARN=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-TaskRoleArn'].Value" --output text)
 echo "TASKROLEARN=$TASKROLEARN."
 
+ECRREPONAME=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-AppImage'].Value" --output text)
+
 # Get latest IMAGEURI from ECR.  Use latest, but use a specific tag, not "latest"
-TAG=$(aws ecr describe-images --repository-name "a-new-startup-ecs" --image-ids imageTag=latest --query "imageDetails[0].imageTags" --output text | sed 's/latest//g' | xargs ) 
+TAG=$(aws ecr describe-images --repository-name $ECRREPONAME --image-ids imageTag=latest --query "imageDetails[0].imageTags" --output text | sed 's/latest//g' | xargs ) 
 # Get the leftmost 7 chars only
 TAGPARSED=${TAG:0:7}
 
 # Need to get the URI separately
-URI=$(aws ecr describe-repositories --repository-names=a-new-startup-ecs --query "repositories[0].repositoryUri" --output text)
+URI=$(aws ecr describe-repositories --repository-names=$ECRREPONAME --query "repositories[0].repositoryUri" --output text)
 IMAGEURI=$URI:$TAGPARSED
 
 echo "IMAGEURI=$IMAGEURI."
 
+# Need to get the TableName and TopicArn
+
+TABLENAME=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-TableName'].Value" --output text)
+echo "TABLENAME=TABLENAME."
+
+TOPICARN=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-TopicArn'].Value" --output text)
+echo "TOPICARN=$TOPICARN."
+
 echo "Creating Service ..."
 aws cloudformation deploy \
     --template-file blue-green.yaml \
-    --stack-name a-new-startup-ecs-bluegreen \
+    --stack-name $PREFIX-bluegreen \
     --capabilities CAPABILITY_IAM \
     --parameter-overrides \
     Cluster=ecs-demo \
@@ -46,3 +58,5 @@ aws cloudformation deploy \
     ImageUri=$IMAGEURI \
     TaskRoleArn=$TASKROLEARN \
     VpcId=$VPCID \
+    TableName=$TABLENAME \
+    TopicArn=$TOPICARN

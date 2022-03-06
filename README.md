@@ -2,22 +2,17 @@
 
 After we've built A-New-Startup and got it running on EC2 - can we run it containerized as an ECS Service? 
 
-
 Yep.
-
 
 This set of CloudFormation templates will create an ECS Cluster, running a Service for A-New-Startup.
 There's also a CI/CD Pipeline that builds a container image of the app, and stores it in ECR. 
 That container image is then used by CloudFormation to update the running service.
 
-NOTE 1: This is NOT a stand-alone ECS Demo.  It is meant to be used AFTER you have installed https://github.com/tplatt37/a-new-startup-pipeline-demo.
-NOTE 2: This set of templates will create resources that cost money - including some with billing per hour (Fargate, Application Load Balancer, etc.)
+NOTE: This set of templates will create resources that cost money - including some with billing per hour (Fargate, Application Load Balancer, etc.)
 
 # Requirements
 
 You need to supply a VPC with 2 Public Subnets (for ALB)
-
-You must have installed https://github.com/tplatt37/a-new-startup-pipeline-demo prior.  This provides many necessary resources, such as the CodeCommit repos and IAM Policies, etc. 
 
 This set of templates uses many static/fixed resource names (stack names, repo name, iam stuff, and much more) for simplicity's sake. 
 This means you can only install it ONCE per account (stack will fail with naming conflicts otherwiwse).
@@ -41,10 +36,6 @@ Please note that the CodeCommit repo (a-new-startup) was previously created.
 
 # Installation
 
-NOTE: You must have already installed: https://github.com/tplatt37/a-new-startup-pipeline-demo
-
-That's where the source code for the app comes from.
-
 I recommend setting your AWS_DEFAULT_REGION first:
 ```
 export AWS_DEFAULT_REGION=us-east-1
@@ -55,7 +46,7 @@ Run the following command, and pass a comma delimited list of the 2 PUBLIC subne
 ```
 Alternatively, you can run the individual files (This is helpful after the initial install if you are making updates and only want one stack to be updated.)
 
-01-cluster.sh, 02-build-projects.sh, etc.
+01-repo.sh, 02-cluster.sh, 03-build-projects.sh, etc.
 
 # What's Next?
 
@@ -65,40 +56,34 @@ After it is deployed, pull up the ALB DNSName in your browser to see the app. (T
 
 To run it again, you have the option of using "Release Change" in CodePipeline, or cloning the application source, and making changes.
 
-Find the Clone URL using:
+To update the app (and trigger the CI/CD pipeline again) do the following:
+
+Find the Clone URL (NOTE: Using ssh here) and clone easily with:
 ```
-aws codecommit get-repository --repository-name "a-new-startup"
-```
-or
-```
-aws codecommit get-repository --repository-name "a-new-startup" --query "repositoryMetadata.cloneUrlSsh"
-```
-Then run a git clone:
-```
-git clone ssh://git-codecommit.us-east-1.amazonaws.com/v1/repos/a-new-startup
-```
-or use command substitution to do all that in one command (NOTE: Using ssh here.  Change to http if desired)
-```
-git clone $(aws codecommit get-repository --repository-name "a-new-startup" --query "repositoryMetadata.cloneUrlSsh" --output text)         
-```
-Modify some of the visible text in src/views/index.ejs (for an easy and visible change)
-```
-git commit -a -m "updated version number" && git push
+REPO=$(aws cloudformation list-exports --query "Exports[?Name=='a-new-startup-ecs-AppRepo'].Value" --output text)
+git clone $(aws codecommit get-repository --repository-name $REPO --query "repositoryMetadata.cloneUrlSsh" --output text)         
 ```
 
+Modify some of the visible text in src/views/index.ejs (for an easy and visible change)
+
+```
+git commit -a -m "updated version number"
+
+git push
+```
 The pipeline should then kick off with the latest commit.
 
 # Then what? 
 
-Using the 04-blue-green.sh script you can demonstrate a Blue/Green deployment orchestrated by CodeDeploy.
+Using the 05-blue-green.sh script you can demonstrate a Blue/Green deployment orchestrated by CodeDeploy.
 
 ```
-./04-blue-green.sh
+./05-blue-green.sh
 ```
 
 (This demo is a bit more manual, but basically run it once to create the service, push some changes to a-new-startup, then run this script again.  The 2nd deploy will be a Blue/Green deployment.)
 
-See the notes within 04-blue-green.sh
+See the notes within 05-blue-green.sh
 
 # Uninstall
 

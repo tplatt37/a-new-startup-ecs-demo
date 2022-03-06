@@ -44,11 +44,6 @@ echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
 aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 
 
-STACK_NAME=a-new-startup-ecs-bluegreen
-echo "Deleting ($STACK_NAME) ..."
-aws cloudformation delete-stack --stack-name $STACK_NAME
-aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 
-
 STACK_NAME=a-new-startup-ecs-pipeline
 echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
@@ -60,6 +55,10 @@ aws cloudformation delete-stack --stack-name $STACK_NAME
 aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 
 
 STACK_NAME=a-new-startup-ecs-cluster
+echo "Deleting ($STACK_NAME) ..."
+aws cloudformation delete-stack --stack-name $STACK_NAME
+
+STACK_NAME=a-new-startup-ecs-repo
 echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
 

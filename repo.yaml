@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: A-New-Startup ECS - CodeCommit repos and ECR Repos used by the CI/CD Pipeline
+
+Parameters:
+  Prefix:
+    Type: String
+    Default: a-new-startup-ecs
+    Description: "A Prefix to use on the resource names."
+  
+  Bucket:
+    Type: String
+    Description: "A private S3 bucket where we can temporarily house a zip of source code."
+    
+Resources:
+  
+  # The A-New-Startup application code will be stored here.  
+  AppRepo:
+    Type: AWS::CodeCommit::Repository
+    Properties: 
+      RepositoryDescription: "The A-New-Startup application code (for ECS) - used in a CI/CD pipeline"
+      # For CodeCommit, we must generate a unique name.  CloudFormation will not do it for us!
+      # This is incorporating part of the StackId - which will be unique (often enough)
+      RepositoryName: !Join ['-', [!Ref Prefix, 'AppRepo', !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
+      Code:
+        BranchName: main
+        S3:
+          Bucket: !Ref Bucket
+          Key: a-new-startup.zip
+          
+  ChartRepo:
+    Type: AWS::CodeCommit::Repository
+    Properties: 
+      RepositoryDescription: "The A-New-Startup application code (for ECS) - used in a CI/CD pipeline"
+      # For CodeCommit, we must generate a unique name.  CloudFormation will not do it for us!
+      # This is incorporating part of the StackId - which will be unique (often enough)
+      RepositoryName: !Join ['-', [!Ref Prefix, 'ChartRepo', !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
+      Code:
+        BranchName: main
+        S3:
+          Bucket: !Ref Bucket
+          Key: a-new-startup-helm.zip
+
+  # ECR Repo for the Container Image we'll be creating.
+  AppImage:
+    Type: AWS::ECR::Repository
+    # CloudFormation will generate a dynamic name for us!      
+    
+Outputs:
+
+  AppRepo:
+    Value: !GetAtt AppRepo.Name
+    Export:
+      Name: !Join ['-', [!Ref Prefix, 'AppRepo']]
+      
+  ChartRepo:
+    Value: !GetAtt ChartRepo.Name
+    Export:
+      Name: !Join ['-', [!Ref Prefix, 'ChartRepo']]
+
+  AppImage:
+    Value: !Ref AppImage
+    Export:
+      Name: !Join ['-', [!Ref Prefix, 'AppImage']]

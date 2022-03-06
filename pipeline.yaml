@@ -1,6 +1,13 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: A-New-Startup - ECS - Sets up the CI/CD Pipeline for deploying to ECS via CloudFormation
 
+Parameters:
+
+  Prefix:
+    Type: String
+    Default: a-new-startup-ecs
+    Description: "A Prefix to use on the resource names."
+    
 Resources:
   
 #  ___  __  ____  ____  ____  __  ____  ____  __    __  __ _  ____ 
@@ -14,11 +21,13 @@ Resources:
   AppPipeline:
     Type: 'AWS::CodePipeline::Pipeline'
     Properties:
-      Name: a-new-startup-containerized
+      Name: !Join [ '-', [!Ref Prefix, "containerized"]]
       ArtifactStore:
         Type: S3
-        Location: !ImportValue a-new-startup-ecs-ArtifactStoreBucket
-      RoleArn: !ImportValue a-new-startup-ecs-CodePipelineServiceRole
+        Location: !ImportValue
+          Fn::Join: [ '-', [!Ref Prefix, "ArtifactStoreBucket"]]
+      RoleArn: !ImportValue
+        Fn::Join: [ '-', [!Ref Prefix, "CodePipelineServiceRole"]]
       Stages:
         - Name: Source
           Actions:
@@ -32,9 +41,12 @@ Resources:
                 - Name: SourceOutput
               Configuration:
                 BranchName: "main"
-                RepositoryName: "a-new-startup"
+                RepositoryName:
+                  Fn::ImportValue:
+                    !Join ["-", [ !Ref Prefix, "AppRepo"]]
                 PollForSourceChanges: false
               RunOrder: 1
+              
         - Name: Build
           Actions:
             - Name: Build-App-Container-Image
@@ -49,8 +61,35 @@ Resources:
                 Version: 1
                 Provider: CodeBuild
               Configuration:
-                ProjectName: !ImportValue a-new-startup-ecs-BuildProject
+                ProjectName: !ImportValue 
+                  Fn::Join: [ '-', [!Ref Prefix, "BuildProject"]]
               RunOrder: 1
+              
+        - Name: Deploy-Backend
+          Actions:
+            - Name: Deploy-Backend
+              InputArtifacts:
+                # need to pass backend.yaml through from the source to the deploy stage.
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND
+                RoleArn: !ImportValue 
+                  Fn::Join: [ '-', [!Ref Prefix, "CFNDeployRole"]]
+                # We're updating an existing stack.
+                StackName: !Join [ "-", [ !Ref Prefix, "backend"]]
+                # THIS IS COMING FROM THE APP SOURCE CODE
+                # This is the template that creates the dynamically named DDB table, SNS Topic, and SQS queue.
+                TemplatePath: "SourceOutput::template.yaml"
+                # We're changing a parameter of the template - to ensure unique resource names.
+                # See here: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/continuous-delivery-codepipeline-action-reference.html
+                ParameterOverrides: '{"Prefix":"a-new-startup-ecs","Environment":"dev"}'
+
         - Name: Deploy
           Actions:
             - Name: Deploy-To-ECS
