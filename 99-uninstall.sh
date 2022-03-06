@@ -5,6 +5,8 @@
 # No snapshots, nothing is retained.
 #
 
+PREFIX=a-new-startup-ecs
+
 REGION=${AWS_DEFAULT_REGION:-$(aws configure get default.region)}
 
 read -p "This will delete all the a-new-startup-ecs-* stacks in $REGION. Are you sure? (Yy) " -n 1 -r
@@ -24,41 +26,47 @@ fi
 echo "OK... here we go..."
 
 # Get the artifacts bucket from the Pipeline stack
-ARTIFACT_BUCKET_STORE=$(aws cloudformation describe-stacks --stack-name a-new-startup-ecs-build-projects --query "Stacks[0].Outputs[?OutputKey=='ArtifactStoreBucket'].OutputValue" --output text )
+ARTIFACT_BUCKET_STORE=$(aws cloudformation describe-stacks --stack-name $PREFIX-build-projects --query "Stacks[0].Outputs[?OutputKey=='ArtifactStoreBucket'].OutputValue" --output text )
 
 # Empty the artifacts bucket (Otherwise stack delete will fail)
 echo "Will empty bucket $ARTIFACT_BUCKET_STORE - to prevent stack delete from failing..."
 aws s3 rm s3://$ARTIFACT_BUCKET_STORE --recursive
 
 # Manually --force delete the ecr repos.  They'll fail to delete otherwise.
-aws ecr delete-repository --repository-name "a-new-startup-ecs" --force
+ECRREPONAME=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-AppImage'].Value" --output text)
+aws ecr delete-repository --repository-name $ECRREPONAME --force
 
 # Delete the services first, otherwise you may find a role missing...
-STACK_NAME=a-new-startup-ecs-bluegreen
+STACK_NAME=$PREFIX-bluegreen
 echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
 aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 
 
-STACK_NAME=a-new-startup-ecs-service
+STACK_NAME=$PREFIX-service
 echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
 aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 
 
-STACK_NAME=a-new-startup-ecs-pipeline
+STACK_NAME=$PREFIX-backend
 echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
 aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 
 
-STACK_NAME=a-new-startup-ecs-build-projects
+STACK_NAME=$PREFIX-pipeline
 echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
 aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 
 
-STACK_NAME=a-new-startup-ecs-cluster
+STACK_NAME=$PREFIX-build-projects
+echo "Deleting ($STACK_NAME) ..."
+aws cloudformation delete-stack --stack-name $STACK_NAME
+aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 
+
+STACK_NAME=$PREFIX-cluster
 echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
 
-STACK_NAME=a-new-startup-ecs-repo
+STACK_NAME=$PREFIX-repo
 echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
 
