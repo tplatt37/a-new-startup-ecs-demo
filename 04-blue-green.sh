@@ -2,11 +2,11 @@
 
 # NOTE: This is more of a manual demo.  When you run this, it creates a NEW Service that will use a CodeDeploy Blue/Green update.
 #
-# To demo it, run this and show the service. (The first deploy is NOT blue/green)
-# Then make a change to a-new-startup - let it flow through the regular pipeline (and therefore new container image in ECR)
+# To demo it, run this and show the newly created ECS Service. (The first deploy is NOT blue/green)
+# Then make a change to the a-new-startup repo - let it flow through the regular pipeline (and therefore new container image in ECR)
 # Then re-run this script again, and it will do a Blue/Green to update this particular service.
 #
-# Note that if anything goes awry, you'll have to "Stack Actions" -> Cancel update stack.
+# Note that if anything goes awry, you'll have to "Stack Actions" -> Cancel update stack, which will do a Rollback to the prior version.
 #
 
 
@@ -25,12 +25,12 @@ TASKROLEARN=$(aws cloudformation list-exports --query "Exports[?Name=='ecs-demo-
 echo "TASKROLEARN=$TASKROLEARN."
 
 # Get latest IMAGEURI from ECR.  Use latest, but use a specific tag, not "latest"
-TAG=$(aws ecr describe-images --repository-name "a-new-startup" --image-ids imageTag=latest --query "imageDetails[0].imageTags" --output text | sed 's/latest//g' | xargs ) 
+TAG=$(aws ecr describe-images --repository-name "a-new-startup-ecs" --image-ids imageTag=latest --query "imageDetails[0].imageTags" --output text | sed 's/latest//g' | xargs ) 
 # Get the leftmost 7 chars only
 TAGPARSED=${TAG:0:7}
 
 # Need to get the URI separately
-URI=$(aws ecr describe-repositories --repository-names=a-new-startup --query "repositories[0].repositoryUri" --output text)
+URI=$(aws ecr describe-repositories --repository-names=a-new-startup-ecs --query "repositories[0].repositoryUri" --output text)
 IMAGEURI=$URI:$TAGPARSED
 
 echo "IMAGEURI=$IMAGEURI."
