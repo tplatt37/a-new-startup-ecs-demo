@@ -56,7 +56,7 @@ Resources:
             - Name: Deploy-To-ECS
               InputArtifacts:
                 - Name: BuildArtifact
-                # need to pass service-a.yaml through from the source to the deploy stage.
+                # need to pass ecs-service.yaml through from the app source to the deploy stage.
                 - Name: SourceOutput
               ActionTypeId:
                 Category: Deploy
@@ -68,7 +68,7 @@ Resources:
                 Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND
                 RoleArn: !ImportValue a-new-startup-ecs-CFNDeployRole
                 # We're updating an existing stack.
-                StackName: "a-new-startup-ecs-service-a"
-                TemplatePath: "SourceOutput::service-a.yaml"
+                StackName: "a-new-startup-ecs-service"
+                TemplatePath: "SourceOutput::ecs-service.yaml"
                 TemplateConfiguration: "BuildArtifact::stackparams.json"
 

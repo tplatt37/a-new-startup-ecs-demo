@@ -55,6 +55,9 @@ Resources:
               Value:
                 Ref:
                   AWS::Region
+            - Name: OVERRIDE_REPO_NAME
+              Type: PLAINTEXT
+              Value: "a-new-startup-ecs"
         ServiceRole:
             Fn::GetAtt:
             - BuildRole

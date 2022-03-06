@@ -30,7 +30,7 @@ Resources:
   ExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Join ['-', [!Ref ClusterName, ExecutionRole]]
+      # No RoleName, we want dynamic, unique names.
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -44,7 +44,7 @@ Resources:
   TaskRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Join ['-', [!Ref ClusterName, TaskRole]]
+      # No RoleName, we want dynamic/unique role names
       ManagedPolicyArns:
         - !ImportValue 'a-new-startup-pipeline-AppManagedPolicy'
       AssumeRolePolicyDocument:
@@ -82,7 +82,7 @@ Resources:
   AppImageRepository:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: "a-new-startup"
+      RepositoryName: "a-new-startup-ecs"
   
 Outputs:
 

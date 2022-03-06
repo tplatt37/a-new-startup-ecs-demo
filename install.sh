@@ -13,22 +13,33 @@ if [ -z $1 ]; then
         echo "Need a comma delimited list of two PUBLIC subnet Ids (for ALB). Exiting..."
         exit 0
 fi
+SUBNETS_COMMADELIMITED=$1
 
 REGION=${AWS_DEFAULT_REGION:-$(aws configure get default.region)}
 
 echo "Creating in $REGION..."
 
-source 01-cluster.sh $1
+echo "Validating VPC and Subnets..."
+SUBNETS=$(echo $SUBNETS_COMMADELIMITED | sed 's/,/ /g')
+echo "Subnets=$SUBNETS"
+
+aws ec2 describe-subnets --subnet-ids $SUBNETS 1>/dev/null
+if [[ $? -ne 0 ]]; then
+        echo "Subnets $SUBNETS don't exist ($REGION) - please double check.  Exiting..."
+        exit 1
+fi
+
+./01-cluster.sh $SUBNETS_COMMADELIMITED
 aws cloudformation wait stack-create-complete --stack-name "a-new-startup-ecs-cluster"
 
 echo "Creating Build Projects..."
-source 02-build-projects.sh
+./02-build-projects.sh
 aws cloudformation wait stack-create-complete --stack-name "a-new-startup-ecs-build-projects"
 
 # The Service will be created the first time the Pipeline runs.
-echo "Creating Pipeline for Service A ..."
-source 03-pipeline-a.sh
-aws cloudformation wait stack-create-complete --stack-name "a-new-startup-ecs-pipeline-a"
+echo "Creating Pipeline for Service ..."
+./03-pipeline.sh
+aws cloudformation wait stack-create-complete --stack-name "a-new-startup-ecs-pipeline"
 
 echo "Done..."
 

@@ -17,6 +17,8 @@ NOTE 2: This set of templates will create resources that cost money - including 
 
 You need to supply a VPC with 2 Public Subnets (for ALB)
 
+You must have installed https://github.com/tplatt37/a-new-startup-pipeline-demo prior.  This provides many necessary resources, such as the CodeCommit repos and IAM Policies, etc. 
+
 This set of templates uses many static/fixed resource names (stack names, repo name, iam stuff, and much more) for simplicity's sake. 
 This means you can only install it ONCE per account (stack will fail with naming conflicts otherwiwse).
 If you need multiple installs, use different accounts!
@@ -49,7 +51,7 @@ export AWS_DEFAULT_REGION=us-east-1
 ```
 Run the following command, and pass a comma delimited list of the 2 PUBLIC subnets.
 ```
-./00-install.sh "subnet-1234568999,subnet-8298392925" 
+./install.sh "subnet-1234568999,subnet-8298392925" 
 ```
 Alternatively, you can run the individual files (This is helpful after the initial install if you are making updates and only want one stack to be updated.)
 
@@ -102,7 +104,7 @@ See the notes within 04-blue-green.sh
 
 To uninstall (WARNING - This deletes EVERYTHING created above - no snapshots, no retain)
 ```
-./98-uninstall.sh 
+./99-uninstall.sh 
 ```
 Investigate that file to find out what it does. 
 
