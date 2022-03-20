@@ -51,16 +51,8 @@ phases:
     commands:
       # Run the install
       - ./install.sh "$BUCKET_NAME" "$PUBLIC_SUBNETS"
-      
-      # Wait until ALB Provisioned
-      - ALB_ARN=$(aws cloudformation list-exports --query "Exports[?Name=='$TARGET_PREFIX-LoadBalancer'].Value" --output text)
-      - echo "ALB_ARN=$ALB_ARN."
-      - aws elbv2 wait load-balancer-available --load-balancer-arns $ALB_ARN 
-      - ALB_DNS=$(aws cloudformation list-exports --query "Exports[?Name=='$TARGET_PREFIX-LoadBalancerDNSName'].Value" --output text)
-      - echo "ALB_DNS=$ALB_DNS."
-      # NOTE: https://
-      - curl "https://$ALB_DNS" >> report.txt
-      - echo $?
+     
+      # The initial pipeline run may still be going... wait for a 2nd exectuion
       
       # Release latest change in the pipeline and wait for it to complete via this helper script
       # Wait up to 20 minutes for it to complete.
@@ -72,8 +64,8 @@ phases:
       - aws elbv2 wait load-balancer-available --load-balancer-arns $ALB_ARN 
       - ALB_DNS=$(aws cloudformation list-exports --query "Exports[?Name=='$TARGET_PREFIX-LoadBalancerDNSName'].Value" --output text)
       - echo "ALB_DNS=$ALB_DNS."
-      # NOTE: https://
-      - curl "https://$ALB_DNS" >> report.txt
+      # NOTE: http://
+      - curl "http://$ALB_DNS" >> report.txt
       - echo $?
       
   post_build:
