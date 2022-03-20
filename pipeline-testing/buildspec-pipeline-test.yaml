@@ -5,7 +5,11 @@ phases:
     runtime-versions:
       docker: 19
     commands:
+      # Various CFN resources and exports use these prefixes to ensure uniqueness.
+      # Prefix for test infra
       - PREFIX=zzz-a-new-startup-test-ecs
+      # Prefix of what we are testing
+      - TARGET_PREFIX=a-new-startup-ecs
       
       # Gotta install AWS CLI v2
       - pip3 uninstall awscli -y
@@ -49,23 +53,23 @@ phases:
       - ./install.sh "$BUCKET_NAME" "$PUBLIC_SUBNETS"
       
       # Wait until ALB Provisioned
-      - ALB_ARN=$(aws cloudformation list-exports --query "Exports[?Name=='a-new-startup-ALBARN'].Value" --output text)
+      - ALB_ARN=$(aws cloudformation list-exports --query "Exports[?Name=='$TARGET_PREFIX-LoadBalancer'].Value" --output text)
       - echo "ALB_ARN=$ALB_ARN."
       - aws elbv2 wait load-balancer-available --load-balancer-arns $ALB_ARN 
-      - ALB_DNS=$(aws cloudformation list-exports --query "Exports[?Name=='a-new-startup-ALBDNS'].Value" --output text)
+      - ALB_DNS=$(aws cloudformation list-exports --query "Exports[?Name=='$TARGET_PREFIX-LoadBalancerDNSName'].Value" --output text)
       - echo "ALB_DNS=$ALB_DNS."
       # NOTE: http://
       - curl "http://$ALB_DNS" >> report.txt
       
       # Release latest change in the pipeline and wait for it to complete via this helper script
       # Wait up to 20 minutes for it to complete.
-      - ./96-release-change.sh "a-new-startup" 20
+      - ./96-release-change.sh "a-new-startup-ecs-containerized" 20
       
       # Wait until ALB Provisioned
-      - ALB_ARN=$(aws cloudformation list-exports --query "Exports[?Name=='a-new-startup-ALBARN'].Value" --output text)
+      - ALB_ARN=$(aws cloudformation list-exports --query "Exports[?Name=='$TARGET_PREFIX-LoadBalancer'].Value" --output text)
       - echo "ALB_ARN=$ALB_ARN."
       - aws elbv2 wait load-balancer-available --load-balancer-arns $ALB_ARN 
-      - ALB_DNS=$(aws cloudformation list-exports --query "Exports[?Name=='a-new-startup-ALBDNS'].Value" --output text)
+      - ALB_DNS=$(aws cloudformation list-exports --query "Exports[?Name=='$TARGET_PREFIX-LoadBalancerDNSName'].Value" --output text)
       - echo "ALB_DNS=$ALB_DNS."
       # NOTE: http://
       - curl "http://$ALB_DNS" >> report.txt
@@ -79,7 +83,7 @@ phases:
       
       # Count the number of stacks remaining that start with "a-new-startup-ecs-"
       # If > 0 , assume uninstall failed.
-      - NUM_STACKS_REMAINING=$(aws cloudformation describe-stacks --query "Stacks[].StackName" | grep '"a-new-startup-' | wc -l)
+      - NUM_STACKS_REMAINING=$(aws cloudformation describe-stacks --query "Stacks[].StackName" | grep '"a-new-startup-ecs-' | wc -l)
       - if [[ $NUM_STACKS_REMAINING -ne 0 ]]; then echo "There are stacks remaining - it looks like uninstall failed."; exit 6; fi
       
       # We need to empty the temporary code bucket before we try and delete the infra stack...
