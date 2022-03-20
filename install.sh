@@ -39,19 +39,43 @@ if [[ $? -ne 0 ]]; then
 fi
 
 ./01-repo.sh $BUCKET
-aws cloudformation wait stack-create-complete --stack-name "$PREFIX-repo" --parameter-overrides Prefix=$PREFIX
+STACK_NAME=$PREFIX-repo
+aws cloudformation wait stack-exists --stack-name $STACK_NAME
+STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[].StackStatus" --output text)
+if [[ $STACK_STATUS != "CREATE_COMPLETE" ]] && [[ $STACK_STATUS != "UPDATE_COMPLETE" ]]; then
+        echo "Create or Update of Stack $STACK_NAME failed: $STACK_STATUS.  Cannot continue..."
+        exit 1
+fi
 
 ./02-cluster.sh $SUBNETS_COMMADELIMITED
-aws cloudformation wait stack-create-complete --stack-name "$PREFIX-cluster" --parameter-overrides Prefix=$PREFIX
+STACK_NAME=$PREFIX-cluster
+aws cloudformation wait stack-exists --stack-name $STACK_NAME
+STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[].StackStatus" --output text)
+if [[ $STACK_STATUS != "CREATE_COMPLETE" ]] && [[ $STACK_STATUS != "UPDATE_COMPLETE" ]]; then
+        echo "Create or Update of Stack $STACK_NAME failed: $STACK_STATUS.  Cannot continue..."
+        exit 1
+fi
 
 echo "Creating Build Projects..."
 ./03-build-projects.sh
-aws cloudformation wait stack-create-complete --stack-name "$PREFIX-build-projects" --parameter-overrides Prefix=$PREFIX
+STACK_NAME=$PREFIX-build-projects
+aws cloudformation wait stack-exists --stack-name $STACK_NAME
+STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[].StackStatus" --output text)
+if [[ $STACK_STATUS != "CREATE_COMPLETE" ]] && [[ $STACK_STATUS != "UPDATE_COMPLETE" ]]; then
+        echo "Create or Update of Stack $STACK_NAME failed: $STACK_STATUS.  Cannot continue..."
+        exit 1
+fi
 
 # The Service will be created the first time the Pipeline runs.
 echo "Creating Pipeline for Service ..."
 ./04-pipeline.sh
-aws cloudformation wait stack-create-complete --stack-name "$PREFIX-pipeline" --parameter-overrides Prefix=$PREFIX
+STACK_NAME=$PREFIX-pipeline
+aws cloudformation wait stack-exists --stack-name $STACK_NAME
+STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[].StackStatus" --output text)
+if [[ $STACK_STATUS != "CREATE_COMPLETE" ]] && [[ $STACK_STATUS != "UPDATE_COMPLETE" ]]; then
+        echo "Create or Update of Stack $STACK_NAME failed: $STACK_STATUS.  Cannot continue..."
+        exit 1
+fi
 
 echo "Done..."
 

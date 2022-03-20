@@ -40,9 +40,9 @@ I recommend setting your AWS_DEFAULT_REGION first:
 ```
 export AWS_DEFAULT_REGION=us-east-1
 ```
-Run the following command, and pass a comma delimited list of the 2 PUBLIC subnets.
+Run the following command, and pass a bucket name for temporary code, and a comma delimited list of the 2 PUBLIC subnets.
 ```
-./install.sh "subnet-1234568999,subnet-8298392925" 
+./install.sh "BUCKET_NAME" "subnet-1234568999,subnet-8298392925" 
 ```
 Alternatively, you can run the individual files (This is helpful after the initial install if you are making updates and only want one stack to be updated.)
 
