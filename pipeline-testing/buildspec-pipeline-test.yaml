@@ -5,7 +5,7 @@ phases:
     runtime-versions:
       docker: 19
     commands:
-      - PREFIX=zzz-test-a-new-startup-ecs
+      - PREFIX=zzz-a-new-startup-test-ecs
       
       # Gotta install AWS CLI v2
       - pip3 uninstall awscli -y
