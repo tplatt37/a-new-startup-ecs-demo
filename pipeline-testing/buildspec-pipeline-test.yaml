@@ -73,6 +73,7 @@ phases:
       - echo "ALB_DNS=$ALB_DNS."
       # NOTE: https://
       - curl "https://$ALB_DNS" >> report.txt
+      - echo $?
       
   post_build:
     commands:
