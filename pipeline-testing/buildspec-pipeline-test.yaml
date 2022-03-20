@@ -73,23 +73,23 @@ phases:
     
       # After all that , we wipe things clean back to where we started.
       # (It is a CI/CD Pipeline, after all)
-      #- ./99-uninstall.sh --yes
+      - ./99-uninstall.sh --yes
       
       # Count the number of stacks remaining that start with "a-new-startup-ecs-"
       # If > 0 , assume uninstall failed.
-      #- NUM_STACKS_REMAINING=$(aws cloudformation describe-stacks --query "Stacks[].StackName" | grep '"a-new-startup-ecs-' | wc -l)
-      #- if [[ $NUM_STACKS_REMAINING -ne 0 ]]; then echo "There are stacks remaining - it looks like uninstall failed."; exit 6; fi
+      - NUM_STACKS_REMAINING=$(aws cloudformation describe-stacks --query "Stacks[].StackName" | grep '"a-new-startup-ecs-' | wc -l)
+      - if [[ $NUM_STACKS_REMAINING -ne 0 ]]; then echo "There are stacks remaining - it looks like uninstall failed."; exit 6; fi
       
       # We need to empty the temporary code bucket before we try and delete the infra stack...
-      #- CODE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-CodeBucket'].Value" --output text )
-      #- echo "Will empty CODE_BUCKET=$CODE_BUCKET."
+      - CODE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-CodeBucket'].Value" --output text )
+      - echo "Will empty CODE_BUCKET=$CODE_BUCKET."
 
       # Empty the artifacts bucket (Otherwise stack delete will fail)
-      #- aws s3 rm s3://$CODE_BUCKET --recursive
+      - aws s3 rm s3://$CODE_BUCKET --recursive
 
       # Delete even the VPC we used. It will be re-created next run.
-      #- aws cloudformation delete-stack --stack-name "$PREFIX-infra"
-      #- aws cloudformation wait stack-delete-complete --stack-name "$PREFIX-infra"
+      - aws cloudformation delete-stack --stack-name "$PREFIX-infra"
+      - aws cloudformation wait stack-delete-complete --stack-name "$PREFIX-infra"
       
 artifacts:
   files:
