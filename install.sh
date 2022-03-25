@@ -9,6 +9,13 @@
 #
 #
 
+# Check AWS CLI version - must be v2.
+AWS_CLI_VERSION=$(aws --version | grep -Po '(?<=aws-cli/)\d')
+if [[ $AWS_CLI_VERSION -lt 2 ]]; then
+    echo "You must install AWS CLI v2 to use this script."
+    exit 1
+fi
+
 PREFIX="a-new-startup-ecs"
 
 # Must pass in an s3 bucket (private) where the source code zip can be stored...
