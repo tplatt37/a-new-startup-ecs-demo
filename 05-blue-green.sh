@@ -28,8 +28,11 @@ echo "TASKROLEARN=$TASKROLEARN."
 
 ECRREPONAME=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-AppImage'].Value" --output text)
 
-# Get latest IMAGEURI from ECR.  Use latest, but use a specific tag, not "latest"
-TAG=$(aws ecr describe-images --repository-name $ECRREPONAME --image-ids imageTag=latest --query "imageDetails[0].imageTags" --output text | sed 's/latest//g' | xargs ) 
+# Get the latest image tag - a specific imagetag, not latest. This sorts by imagePushedAt 
+# NOTE: we use --raw-output on the jq part ot get the value without quotes
+TAG=$(aws ecr describe-images --repository-name $ECRREPONAME | jq '.imageDetails|=sort_by(.imagePushedAt)|.imageDetails[].imageTags[]' --raw-output | grep -v latest | tail -1)
+echo "TAG=$TAG"
+
 # Get the leftmost 7 chars only
 TAGPARSED=${TAG:0:7}
 
@@ -42,7 +45,7 @@ echo "IMAGEURI=$IMAGEURI."
 # Need to get the TableName and TopicArn
 
 TABLENAME=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-TableName'].Value" --output text)
-echo "TABLENAME=TABLENAME."
+echo "TABLENAME=$TABLENAME."
 
 TOPICARN=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-TopicArn'].Value" --output text)
 echo "TOPICARN=$TOPICARN."
