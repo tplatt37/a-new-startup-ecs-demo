@@ -193,7 +193,7 @@ Resources:
             Action: 'sts:AssumeRole'
       Path: /
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
+        - arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess
       Policies:
         # Need a unique name
         - PolicyName: !Join
