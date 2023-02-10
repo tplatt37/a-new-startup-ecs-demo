@@ -28,9 +28,11 @@ echo "TASKROLEARN=$TASKROLEARN."
 
 ECRREPONAME=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-AppImage'].Value" --output text)
 
-# Get the latest image tag - a specific imagetag, not latest. This sorts by imagePushedAt 
+# Get the latest image tag - a specific imagetag, not latest. This sorts by imagePushedAt
+# We combine a server side --filter with jq to get what we want
+# We want to skip UNTAGGED builds and latest.
 # NOTE: we use --raw-output on the jq part ot get the value without quotes
-TAG=$(aws ecr describe-images --repository-name $ECRREPONAME | jq '.imageDetails|=sort_by(.imagePushedAt)|.imageDetails[].imageTags[]' --raw-output | grep -v latest | tail -1)
+TAG=$(aws ecr describe-images --repository-name $ECRREPONAME --filter '{"tagStatus": "TAGGED"}' | jq '.imageDetails|=sort_by(.imagePushedAt)|.imageDetails[].imageTags[]' --raw-output | grep -v latest | tail -1)
 echo "TAG=$TAG"
 
 # Get the leftmost 7 chars only
