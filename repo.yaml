@@ -10,7 +10,20 @@ Parameters:
   Bucket:
     Type: String
     Description: "A private S3 bucket where we can temporarily house a zip of source code."
-    
+
+Mappings:
+
+  RegionalConfigs:
+    # Accounts needed to grant access for ELB access logging as per: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html
+    us-east-1:
+      ELBAccountId: '127311923021'
+    us-east-2:
+      ELBAccountId: '033677994240'
+    us-west-2:
+      ELBAccountId: '797873946194'
+    ca-central-1:
+      ELBAccountId: '985666609251'
+
 Resources:
   
   # The A-New-Startup application code will be stored here.  
@@ -31,6 +44,41 @@ Resources:
   AppImage:
     Type: AWS::ECR::Repository
     # CloudFormation will generate a dynamic name for us!      
+  
+  # ALB will use this for Access Logs
+  LoggingBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+      Tags:
+        - Key: demo
+          Value: a-new-startup-ecs
+          
+ # Enable ELB access logs as per: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html
+  LoggingBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties: 
+      Bucket: !Ref LoggingBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:PutObject'
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref LoggingBucket
+                - '/*'
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::'
+                  - !FindInMap [ "RegionalConfigs", !Ref "AWS::Region", "ELBAccountId"]
+                  - ':root'
     
 Outputs:
 
@@ -43,3 +91,9 @@ Outputs:
     Value: !Ref AppImage
     Export:
       Name: !Join ['-', [!Ref Prefix, 'AppImage']]
+
+  LoggingBucket:
+    Description: Where the alb access logs go.
+    Value: !Ref LoggingBucket
+    Export:
+      Name: !Join ['-', [!Ref Prefix, 'LoggingBucket']]

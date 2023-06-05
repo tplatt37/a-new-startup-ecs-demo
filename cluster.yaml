@@ -52,6 +52,12 @@ Resources:
         # this is the default, but is specified here in case it needs to be changed
         - Key: idle_timeout.timeout_seconds
           Value: 60
+        - Key: access_logs.s3.enabled
+          Value: true
+        - Key: access_logs.s3.bucket
+          Value: !ImportValue "a-new-startup-ecs-LoggingBucket"
+        - Key: access_logs.s3.prefix
+          Value: !Ref Prefix
       Name: !Join ['-', [!Ref ClusterName, LoadBalancer]]
       # "internal" is also an option
       Scheme: internet-facing

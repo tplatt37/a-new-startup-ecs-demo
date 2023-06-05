@@ -70,6 +70,15 @@ echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
 aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME 
 
+# Get the logging bucket from the Repo stack
+LOGGING_BUCKET=$(aws cloudformation describe-stacks --stack-name $PREFIX-repo --query "Stacks[0].Outputs[?OutputKey=='LoggingBucket'].OutputValue" --output text )
+echo "LOGGING_BUCKET=$LOGGING_BUCKET."
+
+# Empty the artifacts bucket (Otherwise stack delete will fail)
+# NOTE: You need to do this AFTER THE ALB Is gone.  Otherwise there may be files created dynamically that prevent the cleanup
+echo "Will empty bucket $LOGGING_BUCKET - to prevent stack delete from failing..."
+aws s3 rm s3://$LOGGING_BUCKET --recursive
+
 STACK_NAME=$PREFIX-repo
 echo "Deleting ($STACK_NAME) ..."
 aws cloudformation delete-stack --stack-name $STACK_NAME
