@@ -46,9 +46,9 @@ Resources:
                 - LOCAL_DOCKER_LAYER_CACHE
         Environment:
             ComputeType: BUILD_GENERAL1_SMALL
-            # NOTE: Using Ubuntu/4.0 image - Docker already installed
-            Image: aws/codebuild/standard:4.0
-            # Must be on for a container image build
+            # NOTE: Using Ubuntu/7.0 image - Docker already installed
+            Image: aws/codebuild/standard:7.0
+            # Must be on for a container image build because Docker daemon must run as root
             PrivilegedMode: true
             Type: LINUX_CONTAINER
             EnvironmentVariables:
