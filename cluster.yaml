@@ -24,7 +24,12 @@ Parameters:
   LoadBalancerPort:
     Type: Number
     Default: 80
- 
+
+  IpRangeForAccess:
+    Type: String
+    # Comma delimited list of Don't leave EC2 IPs open to the Internet
+    Default: "1.1.1.1/32"
+
 Resources:
 
   Cluster:
@@ -43,7 +48,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: !Ref LoadBalancerPort
           ToPort: !Ref LoadBalancerPort
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref IpRangeForAccess
   
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer

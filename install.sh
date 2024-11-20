@@ -31,6 +31,14 @@ if [ -z $2 ]; then
 fi
 SUBNETS_COMMADELIMITED=$2
 
+# Optional - IP address to allowlist for access to the app.  if not provided, we use current IP
+if [ ! -z $3 ]; then
+        MY_IP=$3
+else
+        MY_IP=$(curl -s checkip.amazonaws.com)
+fi
+echo "My IP=$MY_IP"
+
 REGION=${AWS_DEFAULT_REGION:-$(aws configure get default.region)}
 
 echo "Creating in $REGION..."
@@ -54,7 +62,7 @@ if [[ $STACK_STATUS != "CREATE_COMPLETE" ]] && [[ $STACK_STATUS != "UPDATE_COMPL
         exit 1
 fi
 
-./02-cluster.sh $SUBNETS_COMMADELIMITED
+./02-cluster.sh $SUBNETS_COMMADELIMITED $MY_IP
 STACK_NAME=$PREFIX-cluster
 aws cloudformation wait stack-exists --stack-name $STACK_NAME
 STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[].StackStatus" --output text)
