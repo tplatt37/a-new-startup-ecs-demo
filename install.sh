@@ -37,7 +37,7 @@ if [ ! -z $3 ]; then
 else
         MY_IP=$(curl -s checkip.amazonaws.com)
 fi
-echo "My IP=$MY_IP"
+echo "MY_IP=$MY_IP"
 
 REGION=${AWS_DEFAULT_REGION:-$(aws configure get default.region)}
 
