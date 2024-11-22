@@ -21,6 +21,9 @@ Parameters:
     Type: String
   TopicArn:
     Type: String
+  IpRangeForAccess:
+    Type: String
+    Default: "1.1.1.1/32"
     
 Transform:
   - 'AWS::CodeDeployBlueGreen'
@@ -62,21 +65,33 @@ Resources:
   ExampleSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupDescription: Security group for ec2 access
+      GroupDescription: Security group for ecs blue green 
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref IpRangeForAccess
         - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref IpRangeForAccess
         - IpProtocol: tcp
           FromPort: 3000
           ToPort: 3000
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref IpRangeForAccess
+
+  InternalCommunicationRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ExampleSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3000
+      ToPort: 3000
+      SourceSecurityGroupId: !Ref ExampleSecurityGroup
+      # ELB will also be in this group, so it needs to be able to hit 3000 for health check
+      Description: Allow port 3000 access within the security group
+
 
   ALBTargetGroupBlue:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'

@@ -15,6 +15,14 @@
 # We have to retrieve all values here and pass them in via Parameters
 #
 
+# Pass a /32 IP to lock down ELB or get a ticket...
+if [ ! -z $1 ]; then
+        MY_IP=$1
+else
+        MY_IP=$(curl -s checkip.amazonaws.com)
+fi
+echo "MY_IP=$MY_IP."
+
 PREFIX="a-new-startup-ecs"
 
 VPCID=$(aws cloudformation list-exports --query "Exports[?Name=='$PREFIX-VpcId'].Value" --output text)
@@ -59,6 +67,7 @@ aws cloudformation deploy \
     --capabilities CAPABILITY_IAM \
     --parameter-overrides \
     Cluster=ecs-demo \
+    IpRangeForAccess=$MY_IP \
     PublicSubnets=$PUBLICSUBNETS \
     ImageUri=$IMAGEURI \
     TaskRoleArn=$TASKROLEARN \
