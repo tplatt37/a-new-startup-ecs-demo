@@ -17,8 +17,8 @@ PREFIX=a-new-startup-ecs
 # Make sure we don't have this folder local
 rm -rf a-new-startup-github 
 
-echo "Attemping to retrieve latest a-new-startup app source code from git@github.com:tplatt37/a-new-startup.git using ssh..."
-git clone git@github.com:tplatt37/a-new-startup.git a-new-startup-github
+echo "Attemping to retrieve latest a-new-startup app source code from Github (public)"
+git clone https://github.com/tplatt37/a-new-startup.git a-new-startup-github
 if [ $? -eq 128 ]; then
         echo "But... that failed, so we'll use a possibly out of date zip instead."
         cp a-new-startup-fallback.zip a-new-startup.zip
@@ -40,10 +40,10 @@ aws s3 cp a-new-startup.zip s3://$BUCKET
 # Make sure we don't have this folder local
 rm -rf a-new-startup-ui-tests-github 
 
-echo "Attemping to retrieve ui testing code from git@github.com:tplatt37/a-new-startup-ui-tests.git using ssh..."
-git clone git@github.com:tplatt37/a-new-startup-ui-tests.git a-new-startup-ui-tests-github
+echo "Attemping to retrieve ui testing code from GitHub"
+git clone https://github.com/tplatt37/a-new-startup-ui-tests.git a-new-startup-ui-tests-github
 if [ $? -eq 128 ]; then
-        echo "But... that failed, so we'll use a possibly out of date zip instead."
+        echo "But... that failed, so we will use a possibly out of date zip instead."
         cp a-new-startup-ui-tests-fallback.zip a-new-startup-ui-tests.zip
 else
         # NOTE: When we zip, we ignore .git folder, but include other hidden files and folders! 
